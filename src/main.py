@@ -2,15 +2,15 @@ import os
 import discord
 from discord import app_commands
 from discord.ext import commands
-from typing import List, Optional
+from typing import List
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
-
 # define the directories for storage and pictures
 storage_dir: Path = Path('/data')
 log_dir: Path = Path('/data/logs')
+log_file: Path = log_dir / 'bot.log'
 picture_dir: Path = Path('/data/pictures')
 
 # create the storage and picture directories if they don't exist yet (usable by docker)
@@ -21,7 +21,7 @@ picture_dir.mkdir(parents=True, exist_ok=True)
 # initialize the logger for this bot
 logger: logging.Logger = logging.getLogger('discord')
 logger.setLevel(logging.INFO)
-handler = logging.FileHandler(filename=log_dir, encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename=log_file, encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
@@ -38,7 +38,8 @@ bot: commands.Bot = commands.Bot(command_prefix='<', intents=intents, help_comma
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def download_images(interaction: discord.Interaction, message: discord.Message) -> None:
     # Log the execution of the command
-    logger.info(f"Context menu 'Download images' used by {interaction.user.name} in {interaction.channel.name}")
+    channel_name = interaction.channel.name if interaction.guild else "DM"
+    logger.info(f"Context menu 'Download images' used by {interaction.user.name} in {channel_name}")
 
     # get the message and its attachments
     attachments: List[discord.Attachment] = message.attachments
@@ -57,7 +58,6 @@ async def download_images(interaction: discord.Interaction, message: discord.Mes
 
     for attachment in attachments:
         filepath = picture_dir / f"{attachment.filename}"
-        logger.info(f"Files will be saved to: {picture_dir}")
 
         try:
             await attachment.save(fp=filepath)
@@ -72,6 +72,55 @@ async def download_images(interaction: discord.Interaction, message: discord.Mes
 
         finally:
             await msg.edit(content=f"Downloaded {files_downloaded}/{len(attachments)} images.")
+
+
+# @bot.tree.command(name="download_channel", description="Download all images from a specific channel or DM.")
+# @app_commands.allowed_installs(users=True, guilds=False)
+# @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+# async def download_channel(interaction: discord.Interaction, channel: discord.TextChannel) -> None:
+#     # Log the execution of the command
+#     channel_name = interaction.channel.name if interaction.guild else "DM"
+#     logger.info(f"Command 'download_channel' used by {interaction.user.name} in {channel_name}")
+#
+#     # get all messages from the specified channel or DM
+#     messages = []
+#     async for message in channel.history(limit=None):
+#         if message.author != bot.user:
+#             continue
+#         if not message.attachments:
+#             continue
+#         if message.attachments:
+#             messages.append(message)
+#
+#     await interaction.response.send_message(  # noqa
+#         f"Downloading images from {channel_name}...",
+#         ephemeral=True,
+#     )
+#
+#     if not messages:
+#         await interaction.response.send_message("No messages found in the channel.", ephemeral=True)  # noqa
+#         return
+#
+#     msg = await interaction.original_response()
+#     files_downloaded = 0
+#
+#     for message in messages:
+#         attachments = message.attachments
+#         for attachment in attachments:
+#             filepath = picture_dir / f"{attachment.filename}"
+#             try:
+#                 await attachment.save(fp=filepath)
+#
+#                 files_downloaded += 1
+#
+#             except Exception as http_err:
+#                 await interaction.followup.send(
+#                     f"Failed to download {attachment.filename}: {http_err}", ephemeral=True)
+#                 logger.error(f"Failed to download {attachment.filename}: {http_err}")
+#                 continue
+#
+#             finally:
+#                 await msg.edit(content=f"Downloaded {files_downloaded}/{len(attachments)} images.")
 
 
 @bot.event
