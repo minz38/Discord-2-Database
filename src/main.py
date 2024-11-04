@@ -7,17 +7,23 @@ import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
+
+# define the directories for storage and pictures
+storage_dir: Path = Path('/data')
+log_dir: Path = Path('/data/logs')
+picture_dir: Path = Path('/data/pictures')
+
+# create the storage and picture directories if they don't exist yet (usable by docker)
+log_dir.mkdir(parents=True, exist_ok=True)
+storage_dir.mkdir(parents=True, exist_ok=True)
+picture_dir.mkdir(parents=True, exist_ok=True)
+
 # initialize the logger for this bot
 logger: logging.Logger = logging.getLogger('discord')
 logger.setLevel(logging.INFO)
-handler = logging.FileHandler(filename='bot.log', encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename=log_dir, encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
-
-storage_dir = Path('/data')
-picture_dir = Path('/data/pictures')
-
-picture_dir.mkdir(parents=True, exist_ok=True)
 
 load_dotenv()  # load environment variables from .env file
 
@@ -50,9 +56,8 @@ async def download_images(interaction: discord.Interaction, message: discord.Mes
     files_downloaded = 0
 
     for attachment in attachments:
-        filepath = picture_dir / f"{message.author.name}_{attachment.filename}"
+        filepath = picture_dir / f"{attachment.filename}"
         logger.info(f"Files will be saved to: {picture_dir}")
-
 
         try:
             await attachment.save(fp=filepath)
