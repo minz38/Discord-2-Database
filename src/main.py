@@ -97,6 +97,44 @@ async def download_channel(interaction: discord.Interaction, channel: discord.Te
                 logger.error(f"Failed to download {attachment.filename}: {http_err}")
 
 
+@bot.tree.command(name="initial_run")  # Attachments only
+@app_commands.allowed_installs(users=False, guilds=True)
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+async def initial_run(interaction: discord.Interaction) -> None:
+    await interaction.response.send_message("running initial backup...")  # noqa
+
+    msg = await interaction.original_response()
+    message_count: int = 0
+    channels = bot.get_all_channels()
+    for channel in channels:
+        if not channel.type == discord.ChannelType.text:
+            continue
+
+        # get message history
+        async for message in channel.history(limit=None):
+            if message.author.bot:
+                continue
+            message_count += 1
+            # edit the message after every 10 messages
+            if message_count % 50 == 0:
+                await msg.edit(content=f"processing message {message_count} from {channel.name}")
+                print(f"{message.author.name} in {channel.name}: {message.content}")
+
+    await msg.edit(content=f"Finished processing {message_count} messages")
+
+
+async def write_to_database(message: discord.Message) -> bool:
+    # returns true if the message was stored and false if it already exists or cannot be stored
+    pass
+
+
+message: discord.Message | None = None
+
+
+# store the whole message in the database,
+# download all attachments and assign them a unique id based on the message id and number of the attachment
+#
+
 @bot.event
 async def on_ready() -> None:
     logger.info(f'Logged in as {bot.user.name}')
