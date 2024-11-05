@@ -1,11 +1,11 @@
 import os
 import discord
-from discord import app_commands
-from discord.ext import commands
-from typing import List
 import logging
+from typing import List
 from pathlib import Path
 from dotenv import load_dotenv
+from discord import app_commands
+from discord.ext import commands
 
 # define the directories for storage and pictures
 storage_dir: Path = Path('/data')
@@ -21,14 +21,14 @@ picture_dir.mkdir(parents=True, exist_ok=True)
 # initialize the logger for this bot
 logger: logging.Logger = logging.getLogger('discord')
 logger.setLevel(logging.INFO)
-handler = logging.FileHandler(filename=log_file, encoding='utf-8', mode='w')
+handler: logging.Handler = logging.FileHandler(filename=log_file, encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
 load_dotenv()  # load environment variables from ..env file
 
 # initialize the bot using ..env TOKEN environment variable
-token = os.getenv('TOKEN')
+token: str = os.getenv('TOKEN')
 intents: discord.Intents = discord.Intents.all()
 bot: commands.Bot = commands.Bot(command_prefix='<', intents=intents, help_command=None)
 
@@ -76,8 +76,29 @@ async def download_images(interaction: discord.Interaction, message: discord.Mes
             await msg.edit(content=f"Downloaded {files_downloaded}/{len(attachments)} files.")
 
 
+@bot.tree.command(name="download_channel")  # Attachments only
+@app_commands.allowed_installs(users=False, guilds=True)
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+async def download_channel(interaction: discord.Interaction, channel: discord.TextChannel) -> None:
+    await interaction.response.send_message(f"Downloading attachments from {channel.name}...")  # noqa
+
+    msg = await interaction.original_response()
+
+    async for message in channel.history(limit=None):
+        attachments = message.attachments
+        for attachment in attachments:
+            filepath = picture_dir / f"{attachment.filename}"
+            try:
+                await attachment.save(fp=filepath)
+                await msg.edit(content=f"Downloaded {attachment.filename}")
+
+            except Exception as http_err:
+                await interaction.followup.send(f"Failed to download {attachment.filename}: {http_err}")
+                logger.error(f"Failed to download {attachment.filename}: {http_err}")
+
+
 @bot.event
-async def on_ready():
+async def on_ready() -> None:
     logger.info(f'Logged in as {bot.user.name}')
     try:
         await bot.tree.sync()
