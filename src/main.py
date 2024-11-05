@@ -38,8 +38,10 @@ bot: commands.Bot = commands.Bot(command_prefix='<', intents=intents, help_comma
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def download_images(interaction: discord.Interaction, message: discord.Message) -> None:
     # Log the execution of the command
-    channel_name = interaction.channel.name if interaction.guild else "DM"
-    logger.info(f"Context menu 'Download images' used by {interaction.user.name} in {channel_name}")
+    logger.info(
+        f"Context menu 'Download message' used by {interaction.user.name} in "
+        f"{interaction.channel.name if interaction.guild else "DM"}"
+    )
 
     # get the message and its attachments
     attachments: List[discord.Attachment] = message.attachments
@@ -72,55 +74,6 @@ async def download_images(interaction: discord.Interaction, message: discord.Mes
 
         finally:
             await msg.edit(content=f"Downloaded {files_downloaded}/{len(attachments)} images.")
-
-
-# @bot.tree.command(name="download_channel", description="Download all images from a specific channel or DM.")
-# @app_commands.allowed_installs(users=True, guilds=False)
-# @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-# async def download_channel(interaction: discord.Interaction, channel: discord.TextChannel) -> None:
-#     # Log the execution of the command
-#     channel_name = interaction.channel.name if interaction.guild else "DM"
-#     logger.info(f"Command 'download_channel' used by {interaction.user.name} in {channel_name}")
-#
-#     # get all messages from the specified channel or DM
-#     messages = []
-#     async for message in channel.history(limit=None):
-#         if message.author != bot.user:
-#             continue
-#         if not message.attachments:
-#             continue
-#         if message.attachments:
-#             messages.append(message)
-#
-#     await interaction.response.send_message(  # noqa
-#         f"Downloading images from {channel_name}...",
-#         ephemeral=True,
-#     )
-#
-#     if not messages:
-#         await interaction.response.send_message("No messages found in the channel.", ephemeral=True)  # noqa
-#         return
-#
-#     msg = await interaction.original_response()
-#     files_downloaded = 0
-#
-#     for message in messages:
-#         attachments = message.attachments
-#         for attachment in attachments:
-#             filepath = picture_dir / f"{attachment.filename}"
-#             try:
-#                 await attachment.save(fp=filepath)
-#
-#                 files_downloaded += 1
-#
-#             except Exception as http_err:
-#                 await interaction.followup.send(
-#                     f"Failed to download {attachment.filename}: {http_err}", ephemeral=True)
-#                 logger.error(f"Failed to download {attachment.filename}: {http_err}")
-#                 continue
-#
-#             finally:
-#                 await msg.edit(content=f"Downloaded {files_downloaded}/{len(attachments)} images.")
 
 
 @bot.event
