@@ -25,15 +25,15 @@ handler = logging.FileHandler(filename=log_file, encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
-load_dotenv()  # load environment variables from .env file
+load_dotenv()  # load environment variables from ..env file
 
-# initialize the bot using .env TOKEN environment variable
+# initialize the bot using ..env TOKEN environment variable
 token = os.getenv('TOKEN')
 intents: discord.Intents = discord.Intents.all()
 bot: commands.Bot = commands.Bot(command_prefix='<', intents=intents, help_command=None)
 
 
-@bot.tree.context_menu(name="Download Images")
+@bot.tree.context_menu(name="Download Attachment")
 @app_commands.allowed_installs(users=True, guilds=False)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def download_images(interaction: discord.Interaction, message: discord.Message) -> None:
@@ -47,7 +47,7 @@ async def download_images(interaction: discord.Interaction, message: discord.Mes
     attachments: List[discord.Attachment] = message.attachments
     if attachments:
         await interaction.response.send_message(  # noqa
-            f"Downloading {len(attachments)} images...",
+            f"Downloading {len(attachments)} files...",
             ephemeral=True,
         )
 
@@ -73,7 +73,7 @@ async def download_images(interaction: discord.Interaction, message: discord.Mes
             continue
 
         finally:
-            await msg.edit(content=f"Downloaded {files_downloaded}/{len(attachments)} images.")
+            await msg.edit(content=f"Downloaded {files_downloaded}/{len(attachments)} files.")
 
 
 @bot.event
